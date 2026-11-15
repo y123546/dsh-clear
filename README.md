@@ -210,6 +210,21 @@ dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 - 面板在 App 里按网页版插件处理（网页岛 / 在网页版打开），不是原生卡片——这是"不写声明"的代价，换来的是不依赖 App 的版本。
 - 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
 
+### 原生界面里能用什么
+
+dsh-Go 有六样东西不用写它专属代码就原生显示，本插件用足了其中四样（**没有** `dshGo` 清单）：
+
+| 在 App 里 | 现状 | 靠什么 |
+|---|---|---|
+| `/purge status`、`/rules`、`/skills`、`/rewind` | 输入框 `/` 菜单里能选，结果显示在对话里 | `ctx.commands.register` |
+| `purge_status` / `purge_apply` / `purge_revert` | 工具行 + **原生卡片**（三个数字指标 / 结果提示条） | 工具 `presentationMeta` 里的 `dsh-go/view` |
+| `skills/redteam/*` | App「技能」页原生列出 | `SKILL.md` |
+| 清洗面板（补丁列表、规则集、Skill 管理） | **不是原生**，走「网页版 / 网页岛」打开 | 它是 web client |
+
+原生卡片只多一个字段、不是清单声明，所以网页宿主完全不感知：网页上照旧显示文本结果，App 里才画成卡片。视图受两条硬约束，测试里已锁住——必须是可 JSON 序列化的普通对象，且序列化后 < 8 KiB，否则 App 会整张丢弃。
+
+唯一没做的是插件配置的原生表单（App 的「设置 › 插件」里那种）：那需要导出 schemastery `Config`，本插件的配置项一直走 `cordis.patch.yml`，暂未提供。
+
 ## 安全默认值
 
 装上即生效的两个默认值，改之前先知道后果：
