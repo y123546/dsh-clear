@@ -229,6 +229,21 @@ dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 - 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
 - 换包或第一次装完后，到「侧边栏 › 本机引擎 › 重启」让配置层重新加载；只改插件文件不重启，`personaSuffix` 仍是旧值。
 
+### 那 12 个「对不上」的补丁
+
+dsh-Go 构建期把若干段落搬到了别的包，导致桌面版 0.2.2 的精确匹配串全部落空。`lib/go-host-variants.js` 按手机宿主 0.2.2-rc.1 的真实原文做了适配：
+
+| 补丁 | 手机里的实际情况 |
+|---|---|
+| `#32 #53` | Web 身份句在 `dsh-harness-dev-context`，不在 `dsh-web-app/lib` |
+| `#54` | 交付物禁止句在 `dsh-deliverable-file-references` |
+| `#60` | run_code 审批文案在 `dsh-tool-executor-ptc`（含 `lib/types/ptc.js`） |
+| `#62` | 工具审批分支在 `dsh-tools/lib/pipeline.js`，且写成 `approval === void 0` |
+| `#14 #17 #40 #67 #74 #77` | 同文件，但写法不同：`displayReason` 函数调用、`requirePresent`、assemble 返回值带 `tools`、多一层缩进、`dshGoRecall.prepare` 插在 claim 之后、`revised.size > 0` 守卫 |
+| `#80` | 手机 preset 从未追加过 fs/web 工具，「撤掉追加」本就无事可做，直接收敛为已生效 |
+
+适配层只在 `goHostInfo().isGo` 为真时合并进目标文件与匹配串，**桌面版路径、匹配串、产物一字未改**。手机上跑完 `--apply` 后 `--doctor` 应为 `70 已生效 · 0 待应用 · 0 对不上`（剩 7 个是手机没有的可选文件）。改宿主源码后同样要去引擎页重启。
+
 ### 原生界面里能用什么
 
 六样东西不用写 App 代码就原生显示，前四样本插件都接上了；面板与状态条另需 `package.json` 里的一小段 `dshGo` 清单（≤ 16 KiB，只声明位置，不含逻辑）：
