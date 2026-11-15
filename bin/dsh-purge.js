@@ -142,12 +142,41 @@ async function printDoctor(state) {
   out.push(`  shim            dsh.cmd=${state.shim_cmd} dsh.ps1=${state.shim_ps1} dsh=${state.shim_bin}`);
   out.push(`  asar 密封       ${state.asar_still_sealed ? "是 / sealed（桌面宿主还没解包）" : "否 / unpacked"}`);
   out.push(`  hooks 拒绝旁路  ${state.hooks_deny_bypass ? "开启 / on" : "关闭 / off"}`);
+
+  /* ---- 补丁基线：告诉用户"点了也不生效"的那部分 ---- */
+  let baseline = null;
+  if (state.ai_base) {
+    try {
+      baseline = await core.diagnosePatches(state.ai_base);
+    } catch (e) {
+      out.push(`  补丁基线        诊断失败 / diagnose failed: ${String(e && e.message ? e.message : e)}`);
+    }
+  }
+  if (baseline) {
+    const { summary, rows } = baseline;
+    out.push("");
+    out.push(`  补丁基线 / baseline  ✓ ${summary.settled} 已生效 · ⏳ ${summary.pending} 待应用 · ⚠ ${summary.stale} 对不上 · ${summary.missing} 文件缺失`);
+    const stale = rows.filter((r) => r.pending === 0 && r.stale > 0 && r.settled === 0);
+    for (const r of stale.slice(0, 8)) {
+      const where = r.misses.length > 0 ? `例 / e.g. ${r.misses[0]}` : "文件在，原文找不到";
+      out.push(`    ⚠ [#${String(r.id).padEnd(2)}] ${r.name}  ${r.stale}/${r.scanned} 未命中 — ${where}`);
+    }
+    if (stale.length > 8) out.push(`    … 还有 ${stale.length - 8} 个，同上`);
+    if (stale.length > 0) {
+      out.push("    这些补丁的原始代码段在宿主文件里找不到，再点「应用」也不会生效。");
+      out.push("    常见原因：宿主版本与补丁基线不同，或宿主已被别的工具（如 dsh-Go 的 runtime/patches）改过。");
+    }
+  }
+
   out.push("");
+  const staleCount = baseline ? baseline.summary.stale : 0;
   out.push(!state.ai_base
     ? "结论：没定位到宿主，先确认 DSH_BASE 或直接在宿主环境里运行 / host not located"
-    : state.patches_pending > 0
-      ? "结论：有补丁未生效，先在面板点「应用」或执行 --apply / some patches are pending"
-      : "结论：补丁已齐 / all patches settled");
+    : staleCount > 0
+      ? `结论：${staleCount} 个补丁与当前宿主文件对不上（基线不符），其余按上面状态 / baseline mismatch`
+      : state.patches_pending > 0
+        ? "结论：有补丁未生效，先在面板点「应用」或执行 --apply / some patches are pending"
+        : "结论：补丁已齐 / all patches settled");
   return out.join("\n");
 }
 

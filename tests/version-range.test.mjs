@@ -40,6 +40,14 @@ test("* 与空范围表示不限", () => {
   assert.equal(versionSatisfies("9.9.9", ""), true);
 });
 
+test(">=0.2.2-0 涵盖同号预发布引擎（如 0.2.2-rc.1）", () => {
+  assert.equal(versionSatisfies("0.2.2-rc.1", ">=0.2.2-0"), true);
+  assert.equal(versionSatisfies("0.2.2", ">=0.2.2-0"), true);
+  assert.equal(versionSatisfies("0.2.1", ">=0.2.2-0"), false);
+  // rc 也算满足之后，常见误判是把它当成 ">=0.2.2" 放行了 0.2.1
+  assert.equal(versionSatisfies("0.2.1-rc.9", ">=0.2.2-0"), false);
+});
+
 test("读不到宿主版本时闸门给出 unknown 而不是误报不兼容", () => {
   const compat = hostCompat("/nonexistent/definitely-not-a-host");
   assert.equal(compat.unknown, true);
