@@ -18,6 +18,9 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 市场索引里钉的是历史提交，浅克隆拿不到，校验会误报"提交不存在"。
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}

@@ -165,6 +165,16 @@ for (const [i, plugin] of (index.plugins || []).entries()) {
 
 /* ---- git 源指向的提交必须真实存在 ---- */
 const gitOk = fs.existsSync(path.join(ROOT, ".git"));
+const gitShallow = (() => {
+  if (!gitOk) return false;
+  try {
+    return execFileSync("git", ["rev-parse", "--is-shallow-repository"], { cwd: ROOT, stdio: "pipe" })
+      .toString("utf8").trim() === "true";
+  } catch {
+    return false;
+  }
+})();
+const notes = [];
 if (gitOk) {
   for (const plugin of index.plugins || []) {
     for (const version of plugin.versions || []) {
@@ -173,6 +183,12 @@ if (gitOk) {
       try {
         execFileSync("git", ["cat-file", "-e", `${source.commit}^{commit}`], { cwd: ROOT, stdio: "pipe" });
       } catch {
+        /* 浅克隆（CI 默认 depth=1、PR 检出）拿不到历史提交：这是环境限制，不是索引错。
+           真正的存在性由完整克隆的环境（本地 / fetch-depth: 0 的 CI）把关。 */
+        if (gitShallow) {
+          notes.push(`浅克隆环境，跳过提交存在性核对：${source.commit}`);
+          continue;
+        }
         fail(`$.plugins[${plugin.name}].versions[${version.version}].source.commit`, `提交 ${source.commit} 在仓库里不存在`);
         continue;
       }
@@ -198,4 +214,10 @@ if (problems.length > 0) {
   process.exit(1);
 }
 const total = (index.plugins || []).reduce((n, p) => n + (p.versions || []).length, 0);
-console.log(`市场索引自检通过 / market index ok: ${index.plugins.length} 个插件，${total} 个版本${gitOk ? "，git 提交已核对" : ""}`);
+for (const n of notes) console.log(`  · ${n}`);
+const commitNote = !gitOk
+  ? ""
+  : notes.length > 0
+    ? "，git 提交核对已跳过（浅克隆）"
+    : "，git 提交已核对";
+console.log(`市场索引自检通过 / market index ok: ${index.plugins.length} 个插件，${total} 个版本${commitNote}`);
