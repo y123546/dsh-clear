@@ -133,6 +133,11 @@ async function printDoctor(state) {
   out.push(`  sqlite          ${sqlite.ok ? "✓ 可用 / available" : "✗ " + sqlite.reason}`);
   out.push(`  本包 / package  ${own.name || "dsh-purge"}@${own.version || "?"}   dshTarget=${own.dshTarget || "(未声明)"}`);
   out.push(`  运行环境        ${state.host_env || "未知 / unknown"}${state.go_host && state.go_host.isGo ? "  ← 引擎由 App 管理，重启请用 App" : ""}`);
+  if (state.go_host && state.go_host.isGo) {
+    out.push(`  dsh-go 桥接     ${state.go_bridge ? "✓ " + state.go_bridge : "✗ 没找到 —— 原生面板/状态条不会出现"}`);
+  } else {
+    out.push(`  dsh-go 桥接     ${state.go_bridge ? "✓ " + state.go_bridge : "· 未装（只在手机引擎上需要，网页/桌面不受影响）"}`);
+  }
   out.push(`  宿主版本        ${compat.version || "读不到 / unknown"}`);
   if (!compat.unknown) {
     out.push(`  版本兼容        ${compat.ok ? "✓ 满足 / ok" : "✗ " + compat.reason}`);

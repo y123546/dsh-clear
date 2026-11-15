@@ -10,6 +10,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { purgePanelView, panelDataFor, stripFor, pickRows, summaryText } from "../lib/dshgo-view.js";
@@ -254,4 +255,18 @@ test("复制按钮返回 copy 效果，超长也不会超过 8000 字", () => {
   assert.equal(typeof effect.copy, "string");
   assert.ok([...effect.copy].length <= 8000);
   assert.ok([...effect.toast].length <= 40);
+});
+
+test("findGoBridge：profiles/<名>/node_modules 下有桥接就算装上", async () => {
+  const { findGoBridge } = await import("../lib/core.js");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-purge-bridge-"));
+  try {
+    assert.equal(findGoBridge(root), "", "空目录应当找不到");
+    const dir = path.join(root, "profiles", "web", "node_modules", "dsh-go-bridge");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "package.json"), '{"name":"dsh-go-bridge"}');
+    assert.equal(findGoBridge(root), dir);
+  } finally {
+    try { fs.rmSync(root, { recursive: true, force: true }); } catch { /* Windows 偶发占用 */ }
+  }
 });

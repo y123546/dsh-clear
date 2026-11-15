@@ -187,26 +187,29 @@ dsh-purge --doctor
 - Windows 需要 Git Bash（不支持 WSL 的 `System32\bash.exe`）。
 - Node **>= 22.5**：低于此版本插件能加载，但演练台事实库不可用（`--doctor` 会写明原因）。
 
-## 手机端（dsh-Go 本机引擎）
+## 装在手机里（dsh-Go）
 
-[dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) 的「本机引擎」跑的是真 DSH（Ubuntu + PRoot，引擎固定装在 `/opt/dsh`），所以**同一个 `dsh-purge` 包**直接装进去就行，不是另做一个手机版插件。差异由插件在运行时自己适配：
+先说清术语：dsh-Go 文档里的「本机引擎」指的是**手机自身**那套 DSH（Ubuntu + PRoot，引擎固定装在 `/opt/dsh`），不是你的电脑。要把插件装到手机上，就装进这个引擎里；**装的是同一个 `dsh-purge` 包**，不是另做一个手机版。
+
+手机引擎和电脑上的宿主有两处不同，插件在运行时自己适配：
 
 | 差别 | 插件怎么处理 |
 |---|---|
 | 引擎由 App 托管，插件 spawn 重启会把 App 手里的进程顶掉 | 检测到手机引擎就**不自行重启**，`/purge apply` 与 `--apply` 都只提示「去 App 的引擎页重启」 |
 | 引擎在 App 构建期被 dsh-Go 自己 patch 过（`runtime/patches` 下 150+ 个 diff） | 代码补丁会大面积对不上；用 `--apply --prompt-only` 只打提示词层（25 个），这部分不依赖宿主源码原文 |
 
-装法（App 内「终端」）：
+装法（App 内「终端」，命令执行在手机里，不是在电脑上）：
 
 ```sh
 mkdir -p /root/.dsh/dsh-go/plugins && cd /root/.dsh/dsh-go/plugins
 git clone https://github.com/y123546/dsh-clear.git dsh-purge
 dsh plugin --profile web add /root/.dsh/dsh-go/plugins/dsh-purge
-dsh-purge --doctor          # 先看「补丁基线」和环境行
+dsh-purge --doctor          # 先看「补丁基线」「运行环境」「dsh-go 桥接」三行
 dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 ```
 
 - 环境行显示 `dsh-Go 手机引擎（web）` 即识别成功；识别不准或想强制，用 `DSH_PURGE_GO_HOST=1`（强制）/ `=0`（排除）。
+- `dsh-go 桥接` 一行决定**原生面板会不会出现**：手机上由 App 自带；`✗ 没找到` 时面板和状态条不显示，但 `/purge` 命令、工具卡、演练台都不受影响。
 - 手机上有原生面板：底部状态条显示 `62/82 已生效`，点开是「清洗」面板（三个指标 + 可点按钮 + 补丁行），见下一节。
 - 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
 
