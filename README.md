@@ -82,11 +82,24 @@ dsh-purge --help
 /rewind
 ```
 
-模型工具：`purge_status`、`purge_apply`、`purge_revert`。
+模型工具：清洗侧 `purge_status`、`purge_apply`、`purge_revert`；演练台侧 64 个 `redteam_*`（资产、漏洞、POC、报告、子智能体调度，以及证据账本的 `redteam_evidence_*` / `redteam_unknown_*` / `redteam_unverified_count`）。
 
 面板：**清洗** 页依次是补丁状态、提示词、自己的服务器、规则集、Skill；**演练台** 页首次进入需授权确认（读声明 → 等倒计时 → 滚到文末 → 勾三项）。
 
 `/rewind` 与输入框旁的回退按钮：把已发送内容撤回输入框，并撤掉这一轮已发出的内容与已完成任务，改完重新发送即可。
+
+### 证据账本（redteam 侧）
+
+子智能体口头回报的结论不能当事实用。账本把每条作战证据按内容哈希编成 `ev_id`，并强制标注 `confidence`：
+
+| confidence | 含义 | 纪律 |
+|---|---|---|
+| `claimed` | 子智能体报告 | **禁止直接采信**，必须核实后升级 |
+| `observed` | 你亲自跑出来的 | 可直接作为结论 |
+| `derived` | 从 observed 推理的 | 要写明推导链 |
+| `inferred` | 推测 | 必须标注，不能当证据 |
+
+`redteam_evidence_verify` 用同样的语义重算哈希，能查"这条证据有没有被改过"；`redteam_evidence_upgrade` **不覆盖**原记录，而是新增一条 `observed` 并回链 `supporting_ev_ids` —— 原始 `claimed` 永久保留，审计链不断。
 
 ## 配置
 
@@ -133,7 +146,8 @@ lib/                 核心：补丁、宿主适配、规则、技能、更新
 lib/redteam/         演练台：预设、事实库、HTTP 桥、评分
 bin/dsh-purge.js     命令行入口
 presets/redteam/     演练台预设
-skills/redteam/      内置技能
+skills/redteam/      演练台技能（含 evidence-discipline 证据纪律）
+skills/paper-autopilot/  论文流水线技能（独立技能，与演练台无关）
 scripts/             构建、检查与工具脚本
 tests/               node:test 用例
 market/              社区目录（awesome-dsh-plugin）投稿条目
@@ -221,7 +235,7 @@ dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 |---|---|---|
 | `/purge status`、`/rules`、`/skills`、`/rewind` | 输入框 `/` 菜单里能选，结果显示在对话里 | `ctx.commands.register` |
 | `purge_status` / `purge_apply` / `purge_revert` | 工具行 + **原生卡片**（三个数字指标 / 结果提示条） | 工具 `presentationMeta` 里的 `dsh-go/view` |
-| `skills/redteam/*` | App「技能」页原生列出 | `SKILL.md` |
+| `skills/redteam/*`、`skills/paper-autopilot/*` | App「技能」页原生列出 | `SKILL.md` |
 | 底部状态条 `62/82 已生效` | 原生，点开进面板 | `composer.strip` + `ctx.dshGo.strip` |
 | 「清洗」原生面板：三个指标、进度条、应用/还原/刷新/复制、补丁行 | 原生（对话详情「插件」页签 / 全部功能 / 聊天页插件弹层） | `panels` + `ctx.dshGo.panel` |
 | 规则集编辑、Skill 导入、自己的服务器 | **不是原生**，走「网页版 / 网页岛」打开 | 那些是 web client 的表单 |
