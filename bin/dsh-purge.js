@@ -149,6 +149,9 @@ async function printDoctor(state) {
   out.push(`  备份 / backup   ${backups} 个 .bak`);
   out.push(`  备份清单        ${manifest ? `${Object.keys(manifest.files || {}).length} 个文件已记账，宿主 ${manifest.hostVersion || "未知"}` : "无（老备份，还原走保守判定）"}`);
   out.push(`  补丁            applied=${state.patches_applied} pending=${state.patches_pending} skipped=${state.patches_skipped}`);
+  if (Array.isArray(state.go_missing_settled) && state.go_missing_settled.length > 0) {
+    out.push(`  dsh-Go 目标达成  ${state.go_missing_settled.length} 条（#${state.go_missing_settled.join(" #")}）：宿主未装对应第三方插件，文件不存在即无需修改，按已生效结算`);
+  }
   out.push(`  shim            dsh.cmd=${state.shim_cmd} dsh.ps1=${state.shim_ps1} dsh=${state.shim_bin}`);
   out.push(`  asar 密封       ${state.asar_still_sealed ? "是 / sealed（桌面宿主还没解包）" : "否 / unpacked"}`);
   out.push(`  hooks 拒绝旁路  ${state.hooks_deny_bypass ? "开启 / on" : "关闭 / off"}`);

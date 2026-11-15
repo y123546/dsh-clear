@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { GO_HOST_EXTRA_TARGETS, GO_HOST_VARIANTS } from "../lib/go-host-variants.js";
-import { ALL_PATCHES, applyReplacementsToText, diagnosePatchText } from "../lib/core.js";
+import { ALL_PATCHES, applyReplacementsToText, diagnosePatchText, settleGoMissingStatus } from "../lib/core.js";
 
 const GO_IDS = [14, 17, 32, 40, 53, 54, 60, 62, 67, 74, 77, 80];
 
@@ -94,6 +94,23 @@ test("#80 目标已达成时收敛：手机 preset 没有 parity 注释即视为
   withGoHost("0", () => {
     // 桌面环境仍是原来的 optional/skipIfMarked 行为，不被手机规则带偏
     assert.equal(diagnosePatchText(cleanPreset, patch, "minimal.patch.yml").outcome, "skipped");
+  });
+});
+
+test("#71 第三方插件缺失按目标达成结算，只归一它被标记的那一条", () => {
+  assert.equal(GO_HOST_VARIANTS[71].missingSettled, true);
+  const goStatus = { 71: "missing_file", 28: "missing_file", 40: "applied" };
+  withGoHost("1", () => {
+    const settled = settleGoMissingStatus(goStatus);
+    assert.deepEqual(settled, [71]);
+    assert.equal(goStatus[71], "applied");
+    assert.equal(goStatus[28], "missing_file", "未标记的缺失文件不能被误判为已生效");
+    assert.equal(goStatus[40], "applied");
+  });
+  const desktopStatus = { 71: "missing_file", 28: "missing_file" };
+  withGoHost("0", () => {
+    assert.deepEqual(settleGoMissingStatus(desktopStatus), []);
+    assert.equal(desktopStatus[71], "missing_file", "桌面版状态不能被改动");
   });
 });
 
