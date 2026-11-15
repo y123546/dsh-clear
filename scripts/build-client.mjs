@@ -73,7 +73,10 @@ const next = client.slice(0, beginAt) + fragment + client.slice(endAt + END.leng
 
 /* --check：只比对不落盘，供 CI 抓"改了 lib/redteam 却没重建 client.js"的漂移。 */
 if (process.argv.includes("--check")) {
-	if (next !== client) {
+	/* 换行差异不算漂移：.gitattributes 已经统一 LF，这里再兜一层，
+	   避免 checkout 被转成 CRLF 的环境误报。 */
+	const norm = (t) => t.split(String.fromCharCode(13)).join("");
+	if (norm(next) !== norm(client)) {
 		console.error("client.js 与实际源码不同步 / client.js is stale: run npm run build:client");
 		const oldLen = client.length;
 		const newLen = next.length;

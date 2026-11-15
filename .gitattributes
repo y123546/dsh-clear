@@ -1,0 +1,15 @@
+# 统一换行：源码一律 LF 落库与检出。
+# 不加这条，Windows 检出会把文本转成 CRLF，
+# 而 client.js 是构建产物、按 LF 生成，同步检查会在 Windows 上误报不一致。
+* text=auto eol=lf
+
+# 二进制资源不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.woff binary
+*.woff2 binary
