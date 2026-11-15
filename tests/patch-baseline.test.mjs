@@ -11,6 +11,18 @@ import os from "node:os";
 import path from "node:path";
 import { diagnosePatchText, diagnosePatches, patternSample } from "../lib/core.js";
 
+/**
+ * Windows 上刚写完的文件常被杀软/索引器短暂占用，Node 22.5 的 rimraf 会抛 EPERM。
+ * 临时目录交给系统回收即可，不让清理失败把测试判成失败。
+ */
+function cleanupTmp(dir) {
+  try {
+    fs.rmSync(dir, { recursive: true, force: true });
+  } catch {
+    /* 留给系统临时目录清理 */
+  }
+}
+
 const patch = {
   id: 9101,
   name: "TEST_BASELINE",
@@ -67,7 +79,7 @@ test("diagnosePatches 在伪造宿主上把不匹配记成 stale", async () => {
     assert.ok(staleRow.scanned > 0);
     assert.ok(Array.isArray(staleRow.misses));
   } finally {
-    fs.rmSync(root, { recursive: true, force: true });
+    cleanupTmp(root);
   }
 });
 
@@ -97,6 +109,6 @@ test("applyPatchesAllHosts 能完整跑完并返回结果（回归：返回结�
     else process.env.DSH_HOME = prevHome;
     if (prevBase === undefined) delete process.env.DSH_BASE;
     else process.env.DSH_BASE = prevBase;
-    fs.rmSync(root, { recursive: true, force: true });
+    cleanupTmp(root);
   }
 });
