@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.5 是 node:sqlite 的下限；24 是桌面宿主自带的运行时版本。
+        node: ["22.5", "24"]
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 仓库没有运行时依赖，不跑 npm install，避免为 CI 引入 lockfile 维护成本。
+      - name: 语法检查 / syntax
+        run: node scripts/check-syntax.mjs
+
+      - name: client.js 与源码同步 / bundle in sync
+        run: node scripts/build-client.mjs --check
+
+      - name: 单元测试 / unit tests
+        run: node --test "tests/**/*.test.mjs"
+
+      - name: 包形状检查 / package shape
+        run: node scripts/check-package.mjs

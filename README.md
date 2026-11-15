@@ -8,8 +8,8 @@ DeepSeek Harness 破甲 / 红队评测插件。不改模型，改的是宿主层
 
 | 项 | 要求 |
 |---|---|
-| dsh | **>= 0.2.2**（本包 `dshTarget` 为 `>=0.2.2`；低于此版本会显示版本不匹配或跳过） |
-| Node.js | >= 18 |
+| dsh | **>= 0.2.2**（本包 `dshTarget` 为 `>=0.2.2`；低于此版本会在 `--doctor` 与面板里报版本不匹配） |
+| Node.js | **>= 22.5**（演练台事实库用内置 `node:sqlite`；低于 22.5 时插件仍能加载，但事实库不可用） |
 | 宿主 | 官方 web 宿主或桌面宿主，二选一 |
 
 ## 安装
@@ -62,9 +62,11 @@ dsh plugin --profile desktop add "$DSH_HOME/plugins/dsh-purge"
 ## 使用
 
 ```sh
-dsh-purge --status       # 宿主、DSH_HOME、补丁 applied/pending、shim、备份
+dsh-purge --status       # 宿主、DSH_HOME、补丁 applied/pending、shim、备份、版本闸门
+dsh-purge --doctor       # 环境自检：node/sqlite/宿主版本/yaml/备份/补丁
 dsh-purge --apply        # 应用全部补丁（提示词 + 代码 + shim + override）
-dsh-purge --revert       # 回滚还原
+dsh-purge --revert       # 回滚还原（带完整性闸门）
+dsh-purge --revert --force  # 跳过完整性校验强制还原
 dsh-purge --uninstall    # 卸载（已应用则先还原）
 dsh-purge --edit         # 编辑注入文件 prompt-inject.md
 dsh-purge --help
@@ -145,13 +147,54 @@ dsh plugin --profile desktop update dsh-purge
 # 然后完全退出宿主 → 重开 → 清洗 → 应用
 ```
 
-面板里也有「更新 / 还原 / 卸载」。还原会按备份逐文件回退，卸载先还原再移除挂载。
+面板里也有「更新 / 还原 / 卸载」。卸载先还原再移除挂载。
+
+**还原有完整性闸门。** 备份是打补丁前的原样，宿主一旦升级，这份原样就过期了。所以还原前会比对「打完补丁时记下的文件哈希」：
+
+- 对得上 → 正常还原。
+- 对不上（宿主升级 / 文件被人改过）→ **跳过并报冲突**，不会用旧文件把宿主降级。
+- 确实要用旧备份覆盖 → `dsh-purge --revert --force`。宿主已被升级过的场景，更推荐重装官方宿主后按需重新应用，而不是强行还原。
+
+## 自检
+
+装完不确定哪里不对，先跑这个：
+
+```sh
+dsh-purge --doctor
+```
+
+输出包含：Node 版本与 `node:sqlite` 可用性、本包版本与 `dshTarget`、宿主真实版本与兼容结论、`yaml` 能否解析、备份数量与清单记录、补丁 applied/pending 统计、shim 三件套状态、asar 是否还密封、hooks 拒绝旁路开关。
+
+`--status` 也会带一行「版本闸门」，宿主版本落在 `dshTarget` 之外时会明确写出来，不再静默。
 
 ## 兼容性
 
 - dsh **>= 0.2.2**：支持官方 web 与桌面宿主。
-- dsh 0.1.x：不支持，`dshTarget` 不匹配。
+- dsh 0.1.x：不支持，`dshTarget` 不匹配，`--doctor` 会直接标红。
 - Windows 需要 Git Bash（不支持 WSL 的 `System32\bash.exe`）。
+- Node **>= 22.5**：低于此版本插件能加载，但演练台事实库不可用（`--doctor` 会写明原因）。
+
+## 安全默认值
+
+装上即生效的两个默认值，改之前先知道后果：
+
+| 默认 | 位置 | 含义 |
+|---|---|---|
+| `hooksDenyBypass: true` | `cordis.patch.yml` | 跳过宿主 hooks 的拒绝拦截 |
+| `autoApplyOnStart: false` | 同上 | 启动不自动应用补丁，改动需手动点「应用」 |
+
+插件会改写宿主安装目录里的 JS 文件（桌面版还会解开 `app.asar`），这是它工作的前提。升级链路目前有两道校验：下载只允许落在 GitHub / jsdelivr 白名单域名，解包后核对包名与版本。仍建议只在你能完全掌控的机器上使用。
+
+## 开发
+
+```sh
+npm test          # node:test，覆盖版本闸门 / 补丁幂等 / sqlite 降级 / 更新 ref
+npm run check     # 全量语法检查 + client.js 与 lib/redteam 源码同步检查
+npm run doctor    # 本机环境自检
+npm run build:client   # 改完 lib/redteam/client.js 后重建 client.js
+```
+
+CI 在 Node 22.5 / 24 × Ubuntu / Windows 上跑语法、同步、单测与包形状检查。`client.js` 是构建产物，改了 `lib/redteam/client.js` 却忘记重建，`npm run check` 会直接失败。
 
 ## 许可
 

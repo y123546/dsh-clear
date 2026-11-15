@@ -69,6 +69,20 @@ if (!client.includes(BEGIN) || !client.includes(END)) {
 const beginAt = client.indexOf(BEGIN);
 const endAt = client.indexOf(END);
 if (beginAt < 0 || endAt < 0 || endAt < beginAt) throw new Error("drill markers out of order");
-client = client.slice(0, beginAt) + fragment + client.slice(endAt + END.length);
-writeFileSync(clientPath, client);
+const next = client.slice(0, beginAt) + fragment + client.slice(endAt + END.length);
+
+/* --check：只比对不落盘，供 CI 抓"改了 lib/redteam 却没重建 client.js"的漂移。 */
+if (process.argv.includes("--check")) {
+	if (next !== client) {
+		console.error("client.js 与实际源码不同步 / client.js is stale: run npm run build:client");
+		const oldLen = client.length;
+		const newLen = next.length;
+		console.error(`  当前 ${oldLen} 字节，重建后 ${newLen} 字节（差 ${newLen - oldLen}）`);
+		process.exit(1);
+	}
+	console.log("client.js 与 lib/redteam 源码一致 / in sync");
+	process.exit(0);
+}
+
+writeFileSync(clientPath, next);
 console.log("embedded drill client into client.js (" + Buffer.byteLength(fragment) + " bytes fragment)");
