@@ -1,0 +1,9 @@
+# 提交到 awesome-dsh-plugin 的条目（一个 PR 一个文件）。
+# 目标路径：data/plugins/y123546__dsh-clear.yml
+# 提 PR 后合并通常一天内生效，站点与该目录索引会自动重建。
+url: https://github.com/y123546/dsh-clear
+name: y123546/dsh-clear
+category: security
+description:
+  en: Rewrites the DSH host layer at runtime — system prompt, patch presets, approval gates and session rewind — and ships a red-team drill console with presets, skills and a local SQLite fact store. Requires dsh >= 0.2.2 and Node >= 22.5.
+  zh: 运行时改写 DSH 宿主层：系统提示词、补丁预设、审批闸门、会话回退，并附带红队演练台（预设 + 技能 + 本地 SQLite 事实库）。要求 dsh >= 0.2.2、Node >= 22.5。

@@ -1,0 +1,61 @@
+{
+  "format": 1,
+  "title": {
+    "en": "dsh-purge",
+    "zh": "dsh-purge"
+  },
+  "description": {
+    "en": "Harness-layer jailbreak and red-team evaluation plugin for DeepSeek Harness: prompt injection, patch presets, drill console.",
+    "zh": "DeepSeek Harness 的宿主层破甲 / 红队评测插件：提示词注入、补丁预设、演练台。"
+  },
+  "metadata": {
+    "categories": {},
+    "labels": {},
+    "sortKeys": {}
+  },
+  "plugins": [
+    {
+      "name": "dsh-purge",
+      "title": {
+        "en": "dsh-purge · harness jailbreak & red team",
+        "zh": "dsh-purge · 破甲 / 红队评测"
+      },
+      "description": {
+        "en": "Rewrites the host layer at runtime — system prompt, patch presets, approval gates, session rewind — plus a drill console with presets, skills and a SQLite fact store. Requires dsh >= 0.2.2 and Node >= 22.5.",
+        "zh": "运行时改写宿主层：系统提示词、补丁预设、审批闸门、会话回退，另带演练台（预设 + 技能 + SQLite 事实库）。要求 dsh >= 0.2.2、Node >= 22.5。"
+      },
+      "author": "y123546",
+      "homepage": "https://github.com/y123546/dsh-clear",
+      "repository": {
+        "url": "https://github.com/y123546/dsh-clear"
+      },
+      "metadata": {
+        "keywords": [
+          "dsh",
+          "dsh-plugin",
+          "harness",
+          "jailbreak",
+          "red-team",
+          "prompt-injection",
+          "llm-security"
+        ],
+        "labels": [],
+        "sortKeys": {}
+      },
+      "versions": [
+        {
+          "version": "0.2.2",
+          "publishTimestamp": 1794718376,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/y123546/dsh-clear",
+            "commit": "d34133b49b58389726afa6be4ffac73b2dc3d719"
+          },
+          "engines": {
+            "dsh": ">=0.2.2"
+          }
+        }
+      ]
+    }
+  ]
+}

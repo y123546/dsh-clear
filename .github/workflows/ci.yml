@@ -34,3 +34,6 @@ jobs:
 
       - name: 包形状检查 / package shape
         run: node scripts/check-package.mjs
+
+      - name: 市场索引自检 / market index
+        run: node scripts/check-market-index.mjs
