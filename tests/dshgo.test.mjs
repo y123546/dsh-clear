@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { purgePanelView, panelDataFor, stripFor, pickRows } from "../lib/dshgo-view.js";
+import { purgePanelView, panelDataFor, stripFor, pickRows, summaryText } from "../lib/dshgo-view.js";
 import { installDshGo } from "../lib/dshgo.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -73,9 +73,11 @@ test("面板视图：结构合法，数字全部走绑定", () => {
     if (node.text && typeof node.text === "object") bound.push(node.text.$);
     if (node.items && !Array.isArray(node.items) && typeof node.items === "object") bound.push(node.items.$);
     if (node.tone && typeof node.tone === "object") bound.push(node.tone.$);
+    if (node.max && typeof node.max === "object") bound.push(node.max.$);
   });
-  assert.deepEqual(bound.filter(Boolean).sort(), [
-    "data.applied", "data.env", "data.more", "data.note", "data.pending", "data.rows", "data.stale", "data.tone",
+  assert.deepEqual([...new Set(bound.filter(Boolean))].sort(), [
+    "data.applied", "data.env", "data.more", "data.note", "data.pending",
+    "data.rows", "data.stale", "data.tone", "data.total",
   ].sort());
   assert.ok(Buffer.byteLength(JSON.stringify(view), "utf8") < 16 * 1024);
 });
@@ -83,7 +85,7 @@ test("面板视图：结构合法，数字全部走绑定", () => {
 test("面板视图：三个按钮的动作 id 与处理器同名", () => {
   const view = purgePanelView({}, { locale: "zh-CN" });
   const actions = view.children.find((c) => c.type === "actions");
-  assert.deepEqual(actions.items.map((i) => i.action.id), ["apply", "revert", "refresh"]);
+  assert.deepEqual(actions.items.map((i) => i.action.id), ["apply", "revert", "refresh", "copy"]);
   assert.equal(actions.items[0].style, "primary");
 });
 
@@ -233,4 +235,23 @@ test("按钮返回斜杠命令效果，不是直接跑补丁", () => {
 test("没有桥接时什么都不注册，也不抛", () => {
   const ctx = { inject: (_deps, _cb) => {} };
   assert.doesNotThrow(() => installDshGo(ctx, { core: fakeCore }));
+});
+
+
+test("复制摘要：带总数、最多 8 行、纯文本", () => {
+  const text = summaryText(snap, "zh-CN");
+  const lines = text.split(String.fromCharCode(10));
+  assert.match(lines[0], /62\/82/);
+  assert.ok(lines.length <= 10, "最多 8 行补丁 + 2 行头");
+  assert.match(text, /#12 APPROVAL_GATE/);
+  assert.equal(summaryText({ error: "x" }, "zh-CN").length > 0, true);
+});
+
+test("复制按钮返回 copy 效果，超长也不会超过 8000 字", () => {
+  const api = fakeApi();
+  installDshGo(fakeCtx(api), { core: fakeCore });
+  const effect = api.panelOpts.actions.copy({}, { locale: "zh-CN" });
+  assert.equal(typeof effect.copy, "string");
+  assert.ok([...effect.copy].length <= 8000);
+  assert.ok([...effect.toast].length <= 40);
 });

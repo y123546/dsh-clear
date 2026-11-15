@@ -220,7 +220,7 @@ dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 | `purge_status` / `purge_apply` / `purge_revert` | 工具行 + **原生卡片**（三个数字指标 / 结果提示条） | 工具 `presentationMeta` 里的 `dsh-go/view` |
 | `skills/redteam/*` | App「技能」页原生列出 | `SKILL.md` |
 | 底部状态条 `62/82 已生效` | 原生，点开进面板 | `composer.strip` + `ctx.dshGo.strip` |
-| 「清洗」原生面板：三个指标、应用/还原/刷新、补丁行 | 原生（对话详情「插件」页签 / 全部功能 / 聊天页插件弹层） | `panels` + `ctx.dshGo.panel` |
+| 「清洗」原生面板：三个指标、进度条、应用/还原/刷新/复制、补丁行 | 原生（对话详情「插件」页签 / 全部功能 / 聊天页插件弹层） | `panels` + `ctx.dshGo.panel` |
 | 规则集编辑、Skill 导入、自己的服务器 | **不是原生**，走「网页版 / 网页岛」打开 | 那些是 web client 的表单 |
 
 工具卡只多一个字段、不是清单声明，网页宿主完全不感知：网页上照旧显示文本结果，App 里才画成卡片。视图受两条硬约束，测试里已锁住——必须是可 JSON 序列化的普通对象，且序列化后 < 8 KiB，否则 App 会整张丢弃。
