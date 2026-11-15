@@ -205,12 +205,13 @@ dsh-purge --doctor
 
 先说清术语：dsh-Go 文档里的「本机引擎」指的是**手机自身**那套 DSH（Ubuntu + PRoot，引擎固定装在 `/opt/dsh`），不是你的电脑。要把插件装到手机上，就装进这个引擎里；**装的是同一个 `dsh-purge` 包**，不是另做一个手机版。
 
-手机引擎和电脑上的宿主有两处不同，插件在运行时自己适配：
+手机引擎和电脑上的宿主有三处不同，插件在运行时自己适配：
 
 | 差别 | 插件怎么处理 |
 |---|---|
 | 引擎由 App 托管，插件 spawn 重启会把 App 手里的进程顶掉 | 检测到手机引擎就**不自行重启**，`/purge apply` 与 `--apply` 都只提示「去 App 的引擎页重启」 |
 | 引擎在 App 构建期被 dsh-Go 自己 patch 过（`runtime/patches` 下 150+ 个 diff） | 代码补丁会大面积对不上；用 `--apply --prompt-only` 只打提示词层（25 个），这部分不依赖宿主源码原文 |
+| `dsh-system-prompt` 只注册 `provider` / `model`，不认 `{{cwd}}`；段里出现它会抛 `unknown prompt variable "{{cwd}}" in section "deployment:persona-suffix"`，请求 0.1 秒就失败 | `cordis.patch.yml` 的 `personaSuffix` 和运行时 `deployment:persona-suffix` 段都只写纯文本；`sanitizeHostTemplateVars()` 在组装末尾把任意段里未注册的变量换成真实路径/中性文本或拆开 |
 
 装法（App 内「终端」，命令执行在手机里，不是在电脑上）：
 
@@ -226,6 +227,7 @@ dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 - `dsh-go 桥接` 一行决定**原生面板会不会出现**：手机上由 App 自带；`✗ 没找到` 时面板和状态条不显示，但 `/purge` 命令、工具卡、演练台都不受影响。
 - 手机上有原生面板：底部状态条显示 `62/82 已生效`，点开是「清洗」面板（三个指标 + 可点按钮 + 补丁行），见下一节。
 - 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
+- 换包或第一次装完后，到「侧边栏 › 本机引擎 › 重启」让配置层重新加载；只改插件文件不重启，`personaSuffix` 仍是旧值。
 
 ### 原生界面里能用什么
 

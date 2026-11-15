@@ -28,7 +28,8 @@
   config:
     includeHarnessIdentity: false
     personaPrefix: ""
-    personaSuffix: Your working directory is {{cwd}}.
+    # 手机 dsh-Go 未注册 cwd 变量，这里只能是纯文本；真实路径由运行时注入。
+    personaSuffix: 'Working directory: current workspace.'
 
 - id: dsh-purge
   inject: [systemPrompt, tools]
