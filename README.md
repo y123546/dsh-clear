@@ -14,21 +14,7 @@ DeepSeek Harness 破甲 / 红队评测插件。不改模型，改的是宿主层
 
 ## 安装
 
-本包按包名从 npm 安装的方式已不可用，用下面的市场 / tarball / 本地目录 / 手动四种方式。
-
-### 方式 0：从插件市场安装（「发现」页）
-
-仓库自带一份 format 1 的市场索引 `market/index.json`，可以直接挂在宿主的「发现」页里：
-
-1. 打开 **插件 → 发现 → 索引源**。
-2. 添加：`https://cdn.jsdelivr.net/gh/y123546/dsh-clear@main/market/index.json`
-3. 回到「发现」，搜索 `dsh-purge`，点安装。
-
-索引里锁的是 **tag `v0.2.2` 的提交**（`git` 源 + 40 位 commit），不是分支头，所以装到的内容不会随 main 漂移；有新版本时把索引里的 `versions` 加一条即可。
-
-> git 源的副作用说清楚：索引更新本身也是一次提交，所以 main 的头通常比索引钉住的提交新一点，市场里可能显示「有更新」。点它装到的就是最新提交，版本号仍以 `package.json` 为准。想消除这条提示，就要把索引放到单独分支（例如 `market`），仓库目前没这么做。
-
-> 备注：这份索引只对**你自己的宿主**生效（索引源是本地配置）。想让它在所有人的市场里默认出现，得进社区目录 `awesome-dsh-plugin`——条目已备好，抄 `market/awesome-dsh-plugin.yml` 到那边的 `data/plugins/y123546__dsh-clear.yml` 提 PR，合并后站点与市场索引自动重建，通常一天内生效。
+本包按包名从 npm 安装的方式已不可用，用下面的 tarball / 本地目录 / 手动三种方式。
 
 ### 方式 A：tarball
 
@@ -149,7 +135,7 @@ presets/redteam/     演练台预设
 skills/redteam/      内置技能
 scripts/             构建、检查与工具脚本
 tests/               node:test 用例
-market/              市场索引（format 1）与目录投稿条目
+market/              社区目录（awesome-dsh-plugin）投稿条目
 client.js            面板前端（构建产物）
 cordis.patch.yml     宿主挂载补丁
 ```
@@ -205,7 +191,7 @@ dsh-purge --doctor
 
 ```sh
 npm test          # node:test，覆盖版本闸门 / 补丁幂等 / sqlite 降级 / 更新 ref
-npm run check     # 语法 + client.js 同步 + 包形状 + 市场索引一致性
+npm run check     # 语法 + client.js 同步 + 包形状
 npm run doctor    # 本机环境自检
 npm run build:client   # 改完 lib/redteam/client.js 后重建 client.js
 ```

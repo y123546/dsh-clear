@@ -18,9 +18,6 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
-        with:
-          # 市场索引里钉的是历史提交，浅克隆拿不到，校验会误报"提交不存在"。
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -37,6 +34,3 @@ jobs:
 
       - name: 包形状检查 / package shape
         run: node scripts/check-package.mjs
-
-      - name: 市场索引自检 / market index
-        run: node scripts/check-market-index.mjs
