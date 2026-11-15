@@ -8,6 +8,7 @@ import * as rules from "../lib/rules.js";
 
 const args = process.argv.slice(2);
 const force = args.includes("--force");
+const promptOnly = args.includes("--prompt-only");
 
 const MODES = ["--apply", "--revert", "--uninstall", "--status", "--edit", "--doctor", "--help"];
 
@@ -16,6 +17,8 @@ function printHelp() {
   dsh-purge --status     显示状态 / show status
   dsh-purge --doctor     环境自检（node/sqlite/宿主版本/备份/补丁） / environment self-check
   dsh-purge --apply      应用全部清洗（提示词+代码+shim+override） / apply all
+  dsh-purge --apply --prompt-only
+                         只应用提示词层补丁（宿主基线被改过时用） / prompt layer only
   dsh-purge --revert     回滚还原 / revert patches
   dsh-purge --revert --force   跳过完整性校验强制还原 / revert even if the host changed
   dsh-purge --uninstall  卸载插件（已应用则先还原） / uninstall
@@ -34,6 +37,7 @@ function printStatus(state) {
   const out = [];
   out.push("dsh-purge 状态 / Status");
   out.push("  宿主 / surface " + (state.surface || "web"));
+  if (state.host_env) out.push("  运行环境       " + state.host_env);
   out.push("  DSH_HOME      " + state.dsh_home);
   if (state.desktop_install) out.push("  桌面安装       " + state.desktop_install);
   if (state.ai_base) {
@@ -128,6 +132,7 @@ async function printDoctor(state) {
   out.push(`  node            ${process.version}${sqlite.ok ? "" : "   (需要 >= 22.5)"}`);
   out.push(`  sqlite          ${sqlite.ok ? "✓ 可用 / available" : "✗ " + sqlite.reason}`);
   out.push(`  本包 / package  ${own.name || "dsh-purge"}@${own.version || "?"}   dshTarget=${own.dshTarget || "(未声明)"}`);
+  out.push(`  运行环境        ${state.host_env || "未知 / unknown"}${state.go_host && state.go_host.isGo ? "  ← 引擎由 App 管理，重启请用 App" : ""}`);
   out.push(`  宿主版本        ${compat.version || "读不到 / unknown"}`);
   if (!compat.unknown) {
     out.push(`  版本兼容        ${compat.ok ? "✓ 满足 / ok" : "✗ " + compat.reason}`);
@@ -165,6 +170,7 @@ async function printDoctor(state) {
     if (stale.length > 0) {
       out.push("    这些补丁的原始代码段在宿主文件里找不到，再点「应用」也不会生效。");
       out.push("    常见原因：宿主版本与补丁基线不同，或宿主已被别的工具（如 dsh-Go 的 runtime/patches）改过。");
+      out.push(`    想至少把提示词打进去：dsh-purge --apply --prompt-only（${core.patchesForPromptOnly().length} 个提示词层补丁）。`);
     }
   }
 
@@ -214,7 +220,9 @@ async function main() {
       console.log("[ERROR] prompt and rule set are both empty; add a prompt first");
       process.exit(1);
     }
-    const { hosts, report, failures } = await core.applyPatchesAllHosts(core.ALL_PATCHES, {
+    const patches = promptOnly ? core.patchesForPromptOnly(core.ALL_PATCHES) : core.ALL_PATCHES;
+    if (promptOnly) console.log(`  · 只应用提示词层：${patches.length} 个补丁 / prompt layer only`);
+    const { hosts, report, failures } = await core.applyPatchesAllHosts(patches, {
       preserveClientBundles: false,
       forApply: true,
     });
@@ -249,7 +257,12 @@ async function main() {
       console.log("  ⚠ 未定位 shim 目录，跳过注入 / shim dir not found, skipped");
     }
     console.log("");
-    console.log("全部完成 / All done。重启 dsh 生效 / Restart dsh to take effect.");
+    if (state.go_host && state.go_host.isGo) {
+      console.log("全部完成 / All done。宿主是 dsh-Go 手机引擎：请到 App 的「引擎」页重启（或重开 App）后生效。");
+      console.log("Restart the engine from the dsh-Go app (or relaunch it) to take effect.");
+    } else {
+      console.log("全部完成 / All done。重启 dsh 生效 / Restart dsh to take effect.");
+    }
   } else if (mode === "--revert") {
     if (state.ai_base || core.enumeratePatchAiBases().length) {
       const { reverted, errors, conflicts, upgraded } = await core.revertAllHosts({ force });

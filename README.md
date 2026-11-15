@@ -65,6 +65,7 @@ dsh plugin --profile desktop add "$DSH_HOME/plugins/dsh-purge"
 dsh-purge --status       # 宿主、DSH_HOME、补丁 applied/pending、shim、备份、版本闸门
 dsh-purge --doctor       # 环境自检：node/sqlite/宿主版本/yaml/备份/补丁
 dsh-purge --apply        # 应用全部补丁（提示词 + 代码 + shim + override）
+dsh-purge --apply --prompt-only  # 只应用提示词层（宿主基线被改过时用）
 dsh-purge --revert       # 回滚还原（带完整性闸门）
 dsh-purge --revert --force  # 跳过完整性校验强制还原
 dsh-purge --uninstall    # 卸载（已应用则先还原）
@@ -185,6 +186,29 @@ dsh-purge --doctor
 - 已被第三方补丁改过的宿主（如 dsh-Go 的运行时）能装、能加载，但**补丁会大面积对不上**——`--doctor` 的「补丁基线」会写明哪些对不上。
 - Windows 需要 Git Bash（不支持 WSL 的 `System32\bash.exe`）。
 - Node **>= 22.5**：低于此版本插件能加载，但演练台事实库不可用（`--doctor` 会写明原因）。
+
+## 手机端（dsh-Go 本机引擎）
+
+[dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) 的「本机引擎」跑的是真 DSH（Ubuntu + PRoot，引擎固定装在 `/opt/dsh`），所以本插件照常加载，**不需要**任何 `dshGo` 声明。它的两处差异由插件在运行时自己适配：
+
+| 差别 | 插件怎么处理 |
+|---|---|
+| 引擎由 App 托管，插件 spawn 重启会把 App 手里的进程顶掉 | 检测到手机引擎就**不自行重启**，`/purge apply` 与 `--apply` 都只提示「去 App 的引擎页重启」 |
+| 引擎在 App 构建期被 dsh-Go 自己 patch 过（`runtime/patches` 下 150+ 个 diff） | 代码补丁会大面积对不上；用 `--apply --prompt-only` 只打提示词层（25 个），这部分不依赖宿主源码原文 |
+
+装法（App 内「终端」）：
+
+```sh
+mkdir -p /root/.dsh/dsh-go/plugins && cd /root/.dsh/dsh-go/plugins
+git clone https://github.com/y123546/dsh-clear.git dsh-purge
+dsh plugin --profile web add /root/.dsh/dsh-go/plugins/dsh-purge
+dsh-purge --doctor          # 先看「补丁基线」和环境行
+dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
+```
+
+- 环境行显示 `dsh-Go 手机引擎（web）` 即识别成功；识别不准或想强制，用 `DSH_PURGE_GO_HOST=1`（强制）/ `=0`（排除）。
+- 面板在 App 里按网页版插件处理（网页岛 / 在网页版打开），不是原生卡片——这是"不写声明"的代价，换来的是不依赖 App 的版本。
+- 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
 
 ## 安全默认值
 

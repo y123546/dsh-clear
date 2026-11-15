@@ -70,3 +70,33 @@ test("diagnosePatches 在伪造宿主上把不匹配记成 stale", async () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("applyPatchesAllHosts 能完整跑完并返回结果（回归：返回结构/变量名）", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "dsh-purge-apply-"));
+  const aiBase = path.join(root, "@deepseek-ai");
+  const dir = path.join(aiBase, "dsh-agent-instructions", "lib");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "index.js"), "const untouched = 1;\n");
+  fs.writeFileSync(path.join(dir, "bootstrap.js"), "const bootstrap = 1;\n");
+  const home = path.join(root, "home");
+  fs.mkdirSync(home, { recursive: true });
+  const prevHome = process.env.DSH_HOME;
+  const prevBase = process.env.DSH_BASE;
+  process.env.DSH_HOME = home;
+  process.env.DSH_BASE = aiBase;
+  try {
+    const { applyPatchesAllHosts, patchesForPromptOnly } = await import("../lib/core.js");
+    const res = await applyPatchesAllHosts(patchesForPromptOnly(), { aiBases: [aiBase], forApply: true });
+    assert.ok(Array.isArray(res.hosts), "hosts 必须是数组");
+    assert.equal(res.hosts.length, 1);
+    assert.ok(Array.isArray(res.report));
+    assert.ok(Array.isArray(res.failures), "failures 必须是数组");
+    assert.ok(Array.isArray(res.hookDenyRestoreFailed), "hookDenyRestoreFailed 必须是数组");
+  } finally {
+    if (prevHome === undefined) delete process.env.DSH_HOME;
+    else process.env.DSH_HOME = prevHome;
+    if (prevBase === undefined) delete process.env.DSH_BASE;
+    else process.env.DSH_BASE = prevBase;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
