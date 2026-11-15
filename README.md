@@ -189,7 +189,7 @@ dsh-purge --doctor
 
 ## 手机端（dsh-Go 本机引擎）
 
-[dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) 的「本机引擎」跑的是真 DSH（Ubuntu + PRoot，引擎固定装在 `/opt/dsh`），所以本插件照常加载，**不需要**任何 `dshGo` 声明。它的两处差异由插件在运行时自己适配：
+[dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) 的「本机引擎」跑的是真 DSH（Ubuntu + PRoot，引擎固定装在 `/opt/dsh`），所以**同一个 `dsh-purge` 包**直接装进去就行，不是另做一个手机版插件。差异由插件在运行时自己适配：
 
 | 差别 | 插件怎么处理 |
 |---|---|
@@ -207,21 +207,25 @@ dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
 ```
 
 - 环境行显示 `dsh-Go 手机引擎（web）` 即识别成功；识别不准或想强制，用 `DSH_PURGE_GO_HOST=1`（强制）/ `=0`（排除）。
-- 面板在 App 里按网页版插件处理（网页岛 / 在网页版打开），不是原生卡片——这是"不写声明"的代价，换来的是不依赖 App 的版本。
+- 手机上有原生面板：底部状态条显示 `62/82 已生效`，点开是「清洗」面板（三个指标 + 可点按钮 + 补丁行），见下一节。
 - 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
 
 ### 原生界面里能用什么
 
-dsh-Go 有六样东西不用写它专属代码就原生显示，本插件用足了其中四样（**没有** `dshGo` 清单）：
+六样东西不用写 App 代码就原生显示，前四样本插件都接上了；面板与状态条另需 `package.json` 里的一小段 `dshGo` 清单（≤ 16 KiB，只声明位置，不含逻辑）：
 
 | 在 App 里 | 现状 | 靠什么 |
 |---|---|---|
 | `/purge status`、`/rules`、`/skills`、`/rewind` | 输入框 `/` 菜单里能选，结果显示在对话里 | `ctx.commands.register` |
 | `purge_status` / `purge_apply` / `purge_revert` | 工具行 + **原生卡片**（三个数字指标 / 结果提示条） | 工具 `presentationMeta` 里的 `dsh-go/view` |
 | `skills/redteam/*` | App「技能」页原生列出 | `SKILL.md` |
-| 清洗面板（补丁列表、规则集、Skill 管理） | **不是原生**，走「网页版 / 网页岛」打开 | 它是 web client |
+| 底部状态条 `62/82 已生效` | 原生，点开进面板 | `composer.strip` + `ctx.dshGo.strip` |
+| 「清洗」原生面板：三个指标、应用/还原/刷新、补丁行 | 原生（对话详情「插件」页签 / 全部功能 / 聊天页插件弹层） | `panels` + `ctx.dshGo.panel` |
+| 规则集编辑、Skill 导入、自己的服务器 | **不是原生**，走「网页版 / 网页岛」打开 | 那些是 web client 的表单 |
 
-原生卡片只多一个字段、不是清单声明，所以网页宿主完全不感知：网页上照旧显示文本结果，App 里才画成卡片。视图受两条硬约束，测试里已锁住——必须是可 JSON 序列化的普通对象，且序列化后 < 8 KiB，否则 App 会整张丢弃。
+工具卡只多一个字段、不是清单声明，网页宿主完全不感知：网页上照旧显示文本结果，App 里才画成卡片。视图受两条硬约束，测试里已锁住——必须是可 JSON 序列化的普通对象，且序列化后 < 8 KiB，否则 App 会整张丢弃。
+
+面板的按钮**不直接执行补丁**，而是返回 `{ command: { name: "purge", args: "apply" } }`：dsh-Go 给处理器的时限是 3 秒，而真正应用补丁要读写几十个文件，必然超时；转成斜杠命令由 App 在当前对话里执行，既不会超时，结果也留在对话里可追溯。
 
 唯一没做的是插件配置的原生表单（App 的「设置 › 插件」里那种）：那需要导出 schemastery `Config`，本插件的配置项一直走 `cordis.patch.yml`，暂未提供。
 

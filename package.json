@@ -91,5 +91,56 @@
   "engines": {
     "node": ">=22.5"
   },
-  "dshTarget": ">=0.2.2-0"
+  "dshTarget": ">=0.2.2-0",
+  "dshGo": {
+    "v": 1,
+    "title": {
+      "zh": "清洗",
+      "en": "Purge"
+    },
+    "icon": "wrench",
+    "contributes": {
+      "composer.strip": [
+        {
+          "id": "status",
+          "icon": "wrench",
+          "panel": "purge"
+        }
+      ],
+      "composer.actions": [
+        {
+          "id": "apply",
+          "label": {
+            "zh": "应用补丁",
+            "en": "Apply"
+          },
+          "icon": "check"
+        },
+        {
+          "id": "revert",
+          "label": {
+            "zh": "还原",
+            "en": "Revert"
+          },
+          "icon": "refresh"
+        }
+      ],
+      "panels": [
+        {
+          "id": "purge",
+          "title": {
+            "zh": "清洗",
+            "en": "Purge"
+          },
+          "icon": "wrench",
+          "placement": [
+            "session.tab",
+            "features",
+            "chat.panel"
+          ],
+          "presentation": "sheet"
+        }
+      ]
+    }
+  }
 }
