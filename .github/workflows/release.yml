@@ -1,0 +1,56 @@
+name: Release
+
+# 打 tag（v*）或手动触发时，构建桌面版 / dsh-Go 手机版两个包并挂到 Release。
+# 资产名固定（不带版本），所以 README 里的 releases/latest/download/<name> 永远有效。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要发布到的 tag（例如 v0.2.2；不存在会自动创建）"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.5"
+
+      - name: 构建两个发布包 / build release tarballs
+        run: node scripts/build-release.mjs
+
+      - name: 包形状自检 / verify artifacts
+        run: |
+          set -e
+          ls -lh dist
+          for f in dist/dsh-purge-desktop.tgz dist/dsh-purge-dshgo.tgz; do
+            tar -tzf "$f" | grep -q "^\./package.json$"
+            tar -tzf "$f" | grep -q "^\./lib/index.js$"
+          done
+          tar -tzf dist/dsh-purge-desktop.tgz | grep -q "^\./INSTALL-desktop.md$"
+          tar -tzf dist/dsh-purge-dshgo.tgz | grep -q "^\./INSTALL-dshgo.md$"
+          tar -tzf dist/dsh-purge-dshgo.tgz | grep -q "^\./install-dshgo.sh$"
+
+      - name: 发布 / publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: dsh-purge ${{ github.event.inputs.tag || github.ref_name }}
+          files: dist/*.tgz
+          generate_release_notes: true
+          body: |
+            同一份源码同时支持桌面 DSH 与手机 dsh-Go，插件按宿主自动适配。按平台下载：
+
+            | 平台 | 包 |
+            |---|---|
+            | 桌面 DSH（Windows / macOS / Linux） | `dsh-purge-desktop.tgz` |
+            | 手机 dsh-Go（Android） | `dsh-purge-dshgo.tgz` |
+
+            安装步骤见包内 `INSTALL-desktop.md` / `INSTALL-dshgo.md`。

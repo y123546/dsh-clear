@@ -4,6 +4,19 @@ DeepSeek Harness 破甲 / 红队评测插件。不改模型，改的是宿主层
 
 内置演练台（预设 + 技能 + 事实库），也可只用清洗功能。
 
+## 下载
+
+同一份源码同时支持桌面和手机：插件启动时用 `goHostInfo()` 判断宿主，自动走对应分支。
+安装包按平台分开，**按你跑的地方选一个**就行：
+
+| 平台 | 下载 | 安装说明 |
+|---|---|---|
+| 桌面 DSH（Windows / macOS / Linux） | [dsh-purge-desktop.tgz](https://github.com/y123546/dsh-clear/releases/latest/download/dsh-purge-desktop.tgz) | 包内 `INSTALL-desktop.md` |
+| 手机 dsh-Go（Android） | [dsh-purge-dshgo.tgz](https://github.com/y123546/dsh-clear/releases/latest/download/dsh-purge-dshgo.tgz) | 包内 `INSTALL-dshgo.md` |
+
+两个包的代码完全相同，差别只有随包安装说明和手机端的 `install-dshgo.sh`；
+装错也不会坏——插件认宿主，不认包名。想从源码装或自己改，看下面的「安装」。
+
 ## 环境要求
 
 | 项 | 要求 |
@@ -13,6 +26,9 @@ DeepSeek Harness 破甲 / 红队评测插件。不改模型，改的是宿主层
 | 宿主 | 官方 web 宿主或桌面宿主，二选一 |
 
 ## 安装
+
+**桌面用户**：直接下载上面的 `dsh-purge-desktop.tgz`，按包内 `INSTALL-desktop.md` 装即可。
+下面是从源码安装的方式（要跟进 main 改动、或自己改代码时用）。
 
 本包按包名从 npm 安装的方式已不可用，用下面的 tarball / 本地目录 / 手动三种方式。
 
@@ -159,6 +175,11 @@ cordis.patch.yml     宿主挂载补丁
 
 ## 更新 / 还原 / 卸载
 
+**从 Release 包安装的**：到 [Releases](https://github.com/y123546/dsh-clear/releases/latest) 下新包，
+桌面重新 `dsh plugin ... add` 一次、手机重跑 `install-dshgo.sh`，然后重启宿主 / 引擎。
+
+**用 `dsh plugin` 装的**：
+
 ```sh
 dsh plugin --profile desktop update dsh-purge
 # 然后完全退出宿主 → 重开 → 清洗 → 应用
@@ -215,17 +236,26 @@ dsh-purge --doctor
 
 装法（App 内「终端」，命令执行在手机里，不是在电脑上）：
 
+**推荐：下载手机版包**（[Release 页](https://github.com/y123546/dsh-clear/releases/latest) 的 `dsh-purge-dshgo.tgz`，已按手机宿主适配）：
+
+```sh
+mkdir -p /sdcard/dsh-purge && tar -xzf /sdcard/dsh-purge-dshgo.tgz -C /sdcard/dsh-purge
+cd /sdcard/dsh-purge && sh install-dshgo.sh
+```
+
+也可以直接从源码装（要自己跟进 main 的改动）：
+
 ```sh
 mkdir -p /root/.dsh/dsh-go/plugins && cd /root/.dsh/dsh-go/plugins
 git clone https://github.com/y123546/dsh-clear.git dsh-purge
 dsh plugin --profile web add /root/.dsh/dsh-go/plugins/dsh-purge
 dsh-purge --doctor          # 先看「补丁基线」「运行环境」「dsh-go 桥接」三行
-dsh-purge --apply --prompt-only   # 基线对不上时的推荐走法
+dsh-purge --apply           # 12 个手机变体已内置，直接全量应用
 ```
 
 - 环境行显示 `dsh-Go 手机引擎（web）` 即识别成功；识别不准或想强制，用 `DSH_PURGE_GO_HOST=1`（强制）/ `=0`（排除）。
 - `dsh-go 桥接` 一行决定**原生面板会不会出现**：手机上由 App 自带；`✗ 没找到` 时面板和状态条不显示，但 `/purge` 命令、工具卡、演练台都不受影响。
-- 手机上有原生面板：底部状态条显示 `62/82 已生效`，点开是「清洗」面板（三个指标 + 可点按钮 + 补丁行），见下一节。
+- 手机上有原生面板：底部状态条显示 `71/71 已生效`，点开是「清洗」面板（三个指标 + 可点按钮 + 补丁行），见下一节。
 - 引擎在 `/opt/dsh`，插件的 `findAiBase` 已把这一层作为候选，无需手配 `DSH_BASE`。
 - 换包或第一次装完后，到「侧边栏 › 本机引擎 › 重启」让配置层重新加载；只改插件文件不重启，`personaSuffix` 仍是旧值。
 
